@@ -1,0 +1,66 @@
+- name: Isilon API get authentication token
+  hosts: localhost
+  vars:
+    Isilon_API_Endpoint: "https://isilon.demo.local:8080"  ## Replace with the IP address or FQDN of Isilon appliance
+    Isilon_PAPI_version: "7"
+    Isilon_User: "ansible"  ## Use an appropriate user with sufficient privileges
+    Isilon_Pass: "ansible"  ## Ensure the password is correct
+    Isilon_Zone: "system"
+    Isilon_Share_Name: "Ansible Share"
+    Isilon_Share_Path: /ifs/data/ansible
+    Isilon_Share_Descr: "Share created by Ansible RESTAPI playbook"
+
+  tasks:
+    - name: get Isilon API session ID
+      uri:
+        url: "{{ Isilon_API_Endpoint }}/session/1/session"
+        method: POST
+        validate_certs: no
+        body_format: json
+        body:
+          {
+            username: "{{ Isilon_User }}",
+            password: "{{ Isilon_Pass }}",
+            services: ["platform", "namespace"]
+          }
+        status_code: 201 ### required for Isilon session
+      register: result_login
+    - debug:
+        var: result_login
+
+    - name: create SMB share
+      uri:
+        url: "{{ Isilon_API_Endpoint }}/platform/{{ Isilon_PAPI_version }}/protocols/smb/shares"
+        method: POST
+        return_content: no
+        validate_certs: no
+        headers:
+          Cookie: "isisessid={{ result_login.cookies.isisessid }}"
+          X-CSRF-Token: "{{ result_login.cookies.isicsrf }}"
+          referer: "{{ Isilon_API_Endpoint }}"
+        body_format: json
+        body:
+          {
+            ntfs_acl_support: true,
+            create_permissions: "default acl",
+            name: "{{ Isilon_Share_Name }}",
+            path: "{{ Isilon_Share_Path }}",
+            description: "{{ Isilon_Share_Descr }}",
+            browsable: true,
+            zone: "{{ Isilon_Zone }}",
+            create_path: true,
+              permissions: [
+               {
+                permission: "full",
+                permission_type: "allow",
+                trustee:
+                  {
+                   name: "{{ Isilon_User }}",
+                   type: "user"
+                  }
+              } ]
+          }
+        status_code: 201
+      register: result_create
+    - debug:
+        var: result_create

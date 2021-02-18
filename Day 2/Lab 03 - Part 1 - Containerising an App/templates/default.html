@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block content %}
+
+    <section class="jumbotron text-center">
+      <div class="container">
+        <h1 class="jumbotron-heading">Photo upload</h1>
+        <p class="lead text-muted">Use this form to upload your photo's to the album.</p>
+        <p>
+        <form method="post" action="/upload" enctype="multipart/form-data">
+          <div class="form-group">
+            <input type="title" class="form-control" placeholder="Title" name="title">
+          </div>
+          <textarea class="form-control" name="comments" rows="3" placeholder="Comments"></textarea><br>
+          <div class="form-group">
+            <input type="file" name="photo">
+            <input class="btn btn-primary my-2" type="submit" value="Upload">
+          </div>
+        </form>
+        </p>
+      </div>
+    </section>
+
+    <div class="album py-5 bg-light">
+      <div class="container">
+
+        <div class="row">
+
+        {% for photo in album_photos %}
+
+          <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+              <a href="{{ url_for('photo',photo=photo['photo']) }}" class="thumbnail"><img src="{{ photo['thumb'] }}" alt="{{ photo['title'] }}" title="{{ photo['title'] }}" width="100%" class="img-responsive"></a>
+              <div class="card-body">
+                <p class="card-text"><b>{{ photo['title'] }}</b><br>{{ photo['comments'] }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                </div>
+              </div>
+            </div>
+          </div>
+
+        {% endfor %}
+
+        </div>
+      </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,8 @@
+---
+applications:
+- name: photo-album-tc
+  memory: 64M
+  instances: 1
+  random-route: false
+  buildpacks:
+  - https://github.com/cloudfoundry/python-buildpack.git

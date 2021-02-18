@@ -1,0 +1,48 @@
+- name: ECS create new S3 bucket
+  hosts: localhost
+  gather_facts: False
+  vars:
+    ECS_Username: "<ECS MANAGEMENT USERNAME>"            ## Username: "<ENTER YOUR ECS TESTDRIVE MANAGEMENT USERNAME> in the form 11111111111111-admin"
+    ECS_Password: "<ECS MANAGEMENT PASSWORD>"            ## Password: "<ENTER YOUR ECS TESTDRIVE MANAGEMENT PASSWORD>"
+    ECS_NameSpace: "<ECS MANAGEMENT NAMESPACE>"          ## Namespace: "<ENTER YOUR ECS TESTDRIVE MANAGEMENT NAMESPACE>"
+    ECS_Host: "portal.ecstestdrive.com"
+    ECS_BucketName: "myAnsibleBucket"
+    ECS_BucketOwner: "<ECS AWS S3 ACCESS KEY>"           ## BucketOwner: "<ENTER YOUR ECS TESTDRIVE AWS S3 ACCESS KEY>"
+
+  tasks:
+    - name: Get ECS API authentication token
+      uri:
+        validate_certs: no
+        user: "{{ ECS_Username }}"
+        password: "{{ ECS_Password }}"
+        namespace: "{{ ECS_NameSpace }}"
+        url: https://{{ECS_Host}}/login
+        method: GET
+        headers:
+          Content-Type: application/json
+          Accept: application/json
+        return_content: yes
+      register: result_login
+
+    - name: Connect to ECS using a previously stored cookie to create new bucket
+      uri:
+        validate_certs: no
+        url: https://{{ECS_Host}}/object/bucket.json
+        method: POST
+        headers:
+          Content-Type: application/json
+          Accept: application/json
+          X-SDS-AUTH-TOKEN: "{{ result_login.x_sds_auth_token }}"
+        body_format: json
+        body:
+          {
+            "name": "{{ ECS_BucketName }}",
+            "owner": "{{ ECS_BucketOwner }}",
+            "filesystem_enabled": "false",
+            "head_type": "s3",
+            "retention": "3",
+          }
+        return_content: yes
+      register: result_create
+    - debug:
+        var: result_create
